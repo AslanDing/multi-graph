@@ -1,0 +1,24 @@
+{
+    "name": "pubmed",
+    "n_gpu": 1,
+
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0.0,
+            "amsgrad": true
+        }
+    },
+
+    "trainer": {
+        "epochs": 100,
+        "save_dir": "../exp/pubmed",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_acc",
+        "early_stop": 100,
+        "tensorboard": true
+    }
+}
