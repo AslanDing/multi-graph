@@ -22,10 +22,11 @@ def read_gz(file):
             lines.append(int(line))
     return lines
 
-def propcess(path= './ogbn_mag/processed/geometric_data_processed.pt',
-             tain_file = r'/media/aslan/50E4BE16E4BDFDF2/DATA/CODE/new_project/datasets/ogbn-mag/ogbn_mag/split/time/paper/train.csv.gz',
-             val_file = r'/media/aslan/50E4BE16E4BDFDF2/DATA/CODE/new_project/datasets/ogbn-mag/ogbn_mag/split/time/paper/valid.csv.gz',
-             test_file = r'/media/aslan/50E4BE16E4BDFDF2/DATA/CODE/new_project/datasets/ogbn-mag/ogbn_mag/split/time/paper/test.csv.gz'):
+def propcess(path= '../exp/ogbn_mag/data/geometric_data_processed.pt'):
+    tain_file = path.replace("geometric_data_processed.pt","train.csv.gz")
+    val_file = path.replace("geometric_data_processed.pt","valid.csv.gz")
+    test_file = path.replace("geometric_data_processed.pt","test.csv.gz")
+
     data = torch.load(path)
 
     edge_data = data[0]['edge_index_dict']
@@ -39,7 +40,25 @@ def propcess(path= './ogbn_mag/processed/geometric_data_processed.pt',
     paper_data = data[0]['x_dict']['paper'].numpy()
     y_data = data[0]['y_dict']['paper'].numpy()
 
-    idx0, idx1 = np.where(y_data < 4)
+    # num_label = {}
+    # for i in range(y_data.max()):
+    #     result_tmp = np.where(y_data == i)
+    #     num_label[i]=result_tmp[0].shape[0]
+    #     print()
+    #
+    # num_label = sorted(num_label.items(),key=lambda  x:x[1],reverse=True)
+    # 214 52 219 304 221
+    idlists = []
+    idx0, idx1 = np.where(y_data == 214)
+    idlists.extend(idx0)
+    idx0, idx1 = np.where(y_data == 52)
+    idlists.extend(idx0)
+    idx0, idx1 = np.where(y_data == 219)
+    idlists.extend(idx0)
+    idx0, idx1 = np.where(y_data == 304)
+    idlists.extend(idx0)
+    idx0, idx1 = np.where(y_data == 221)
+    idlists.extend(idx0)
 
     # smple
     samples_paper = idx0
@@ -57,30 +76,20 @@ def propcess(path= './ogbn_mag/processed/geometric_data_processed.pt',
 
     samples_institution = np.random.choice(np.arange(0, num_institution),
                                            int(num_institution * 0.1))
-    #
-    # samples_paper = np.random.choice(np.arange(0,len(num_paper)),
-    #                                  int(len(num_paper)*0.1))
-
-    # author_institution_author = edge_data[('author', 'affiliated_with', 'institution')].numpy()
-    # row = author_institution_author[0, :]
-    # col = author_institution_author[1, :]
-    # ones = np.ones_like(row)
-    # author_institution_csr_matrix = coo_matrix((ones, (row, col)),
-    #                                 shape=(num_author, num_institution)).tocsr()[samples_paper,:]
-    # author_institution_author = author_institution_csr_matrix.dot(author_institution_csr_matrix.transpose())
-
     paper_data = paper_data[samples_paper]
     y_data = y_data[samples_paper]
-
-    # node_year = data[0]['node_year']
-    # edge_reltype = data[0]['edge_reltype']
+    y_data = np.where(y_data==214,0*np.ones_like(y_data),y_data)
+    y_data = np.where(y_data==52,1*np.ones_like(y_data),y_data)
+    y_data = np.where(y_data==219,2*np.ones_like(y_data),y_data)
+    y_data = np.where(y_data==304,3*np.ones_like(y_data),y_data)
+    y_data = np.where(y_data==221,4*np.ones_like(y_data),y_data)
+    y_data = y_data.astype(np.int)
 
     paper_subject = edge_data[('paper', 'has_topic', 'field_of_study')].numpy()
     row = paper_subject[0, :]
     col = paper_subject[1, :]
     data = np.ones_like(row)
     paper_subject_csr_matrix = coo_matrix((data, (row, col)), shape=(num_paper, num_subject)).tocsr()
-    # paper_subject_paper = paper_subject_csr_matrix.dot(paper_subject_csr_matrix.transpose())
     paper_subject_csr_matrix = paper_subject_csr_matrix[samples_paper]
 
     paper_cite_paper = edge_data[('paper', 'cites', 'paper')].numpy()
@@ -108,17 +117,13 @@ def propcess(path= './ogbn_mag/processed/geometric_data_processed.pt',
     author_institution_csr_matrix = author_institution_csr_matrix[:, samples_institution]
     author_institution_author = author_institution_csr_matrix.dot(author_institution_csr_matrix.transpose())
 
-    # feature_authors = paper_data.dot(author_paper_csr_matrix.transpose())
     feature_authors = np.zeros([samples_author.shape[0], paper_data.shape[1]])
-    # nums = paper_data.shape[0]//100
     for i in range(samples_author.shape[0]):
         indexs = author_paper_csr_matrix[i].nonzero()
         for j in range(len(indexs[0])):
             row = indexs[0][j]
             col = indexs[1][j]
             feature_authors[i] += paper_data[col]
-        # temp_feature = author_paper_csr_matrix.dot(paper_data[i].reshape(1,-1))
-        # feature_authors = feature_authors+ temp_feature.todense()
         feature_authors[i] /= len(indexs)
 
     train_index = read_gz(tain_file)
@@ -147,7 +152,7 @@ def propcess(path= './ogbn_mag/processed/geometric_data_processed.pt',
     test_index = np.concatenate(indexes)
 
 
-    savemat(r'../exp/data/ogbn_mag_graph.mat', {
+    savemat(r'../exp/ogbn_mag/data/ogbn_mag_graph.mat', {
                                                 'AFA':author_institution_author,
                                                 'PS':paper_subject_csr_matrix,
                                                 'PCP':paper_cite_paper_csr_matrix,
@@ -163,5 +168,5 @@ def propcess(path= './ogbn_mag/processed/geometric_data_processed.pt',
 
 
 if __name__=="__main__":
-    path = r'/media/aslan/50E4BE16E4BDFDF2/DATA/CODE/new_project/datasets/ogbn-mag/ogbn_mag/processed/geometric_data_processed.pt'
+    path = r'../exp/ogbn_mag/data/geometric_data_processed.pt'
     propcess(path)

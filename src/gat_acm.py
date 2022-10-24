@@ -71,16 +71,16 @@ class GAT(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, heads):
         super().__init__()
         #self.node_encoder = Linear(in_channels, hidden_channels)
-        self.conv1 = GATConv(in_channels, hidden_channels, heads, dropout=0.6)
+        self.conv1 = GATConv(in_channels, hidden_channels, heads, dropout=0.5)
         # On the Pubmed dataset, use `heads` output heads in `conv2`.
         self.conv2 = GATConv(hidden_channels * heads, out_channels, heads=1,
-                             concat=False, dropout=0.6)
+                             concat=False, dropout=0.5)
 
     def forward(self, x, edge_index):
         #x = self.node_encoder(x)
-        x = F.dropout(x, p=0.6, training=self.training)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = F.elu(self.conv1(x, edge_index))
-        x = F.dropout(x, p=0.6, training=self.training)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = self.conv2(x, edge_index)
         return x.softmax(dim=1)
 
@@ -89,15 +89,6 @@ model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
 batch_size = 32
 length = len(data_set_train)
-
-# def train():
-#     model.train()
-#     optimizer.zero_grad()
-#     out = model(data.x, data.edge_index)
-#     loss = F.cross_entropy(out[train_list], train_label_th)
-#     loss.backward()
-#     optimizer.step()
-#     return float(loss)
 
 def train():
     iter_data = iter(data_set_train)
@@ -120,18 +111,6 @@ def train():
         optimizer.step()
 
     return float(total_loss)
-
-# @torch.no_grad()
-# def test():
-#     model.eval()
-#     pred = model(data.x, data.edge_index).argmax(dim=-1)
-#
-#     micre_f1 = f1_score(pred[test_list].cpu().detach().numpy(), test_label[0], average="micro")
-#     macre_f1 = f1_score(pred[test_list].cpu().detach().numpy(), test_label[0], average="macro")
-#     # accs = []
-#     # for mask in [data.train_mask, data.val_mask, data.test_mask]:
-#     #     accs.append(int((pred[mask] == data.y[mask]).sum()) / int(mask.sum()))
-#     return micre_f1,macre_f1
 
 @torch.no_grad()
 def test():
@@ -183,7 +162,3 @@ print(np.array(bmic_list).mean())
 print(bmac_list)
 print(np.array(bmac_list).mean())
 
-"""
- bmic:0.6637, bmac:0.6684
-
-"""

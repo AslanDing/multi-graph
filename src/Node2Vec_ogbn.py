@@ -7,27 +7,30 @@ print(torch.version.cuda)
 
 from sklearn.manifold import TSNE
 
-from torch_geometric.datasets import Planetoid
 from torch_geometric.nn import Node2Vec
 
 from scipy.io import loadmat
 import numpy as np
 
 
-
-
 def main():
-    data_dir = r'../exp/data/PubMed'
-    data_path = data_dir + r'/PubMed_process.mat'
+    data_dir = r'../exp/ogbn_mag/data'
+    data_path = data_dir + r'/ogbn_mag_graph.mat'
+
     datas = loadmat(data_path)
 
-    A11 = datas['A11']
+    A11 = datas['PCP']
 
-    train_list = datas['train_list']
-    train_label = datas['train_label']
+    Paper_Label = datas['PL']
 
-    test_list = datas['test_list']
-    test_label = datas['test_label']
+    train_list = datas['train_idx']
+    train_label = Paper_Label[train_list[0,:]]
+
+    test_list = datas['test_idx']
+    test_label = Paper_Label[test_list[0,:]]
+
+    val_list = datas['val_idx']
+    val_label = Paper_Label[val_list[0,:]]
 
     A11sub = A11.nonzero()
     edge_index = torch.stack([torch.from_numpy(A11sub[0].astype(np.int64)),
@@ -91,40 +94,9 @@ def main():
     print(np.array(bmic_list).mean())
     print(bmac_list)
     print(np.array(bmac_list).mean())
-    """
-    [0.23255813953488372, 0.26744186046511625, 0.22093023255813954, 0.22093023255813954, 0.20930232558139536, 0.20930232558139536, 0.22093023255813954, 0.19767441860465115, 0.20930232558139536, 0.23255813953488372]
-    0.22209302325581395
-    [0.23255813953488372, 0.26744186046511625, 0.22093023255813954, 0.22093023255813954, 0.20930232558139536, 0.20930232558139536, 0.22093023255813954, 0.19767441860465115, 0.20930232558139536, 0.23255813953488372]
-    0.22209302325581395
-    [0.2081439393939394, 0.22324862764734243, 0.18409600502706014, 0.17393557422969186, 0.16610402268297006, 0.19576176384687022, 0.1849296536796537, 0.16908040969367627, 0.19579162667397962, 0.18227850778254004]
-    0.18833701306577239
-    
-    [0.26744186046511625, 0.2441860465116279, 0.22093023255813954, 0.20930232558139536, 0.23255813953488372, 0.22093023255813954, 0.23255813953488372, 0.23255813953488372, 0.27906976744186046, 0.23255813953488372]
-    0.2372093023255814
-    [0.26744186046511625, 0.2441860465116279, 0.22093023255813954, 0.20930232558139536, 0.23255813953488372, 0.22093023255813954, 0.23255813953488372, 0.23255813953488372, 0.27906976744186046, 0.23255813953488372]
-    0.2372093023255814
-    [0.22657542322176466, 0.1889017392632521, 0.17293147109241078, 0.19691738355421218, 0.19790490555196438, 0.1749461482776277, 0.20126590463799768, 0.18531344523570933, 0.20443166582872466, 0.21074570853982622]
-    0.19599337952034895
-    """
-    # @torch.no_grad()
-    # def plot_points(colors):
-    #     model.eval()
-    #     z = model(torch.arange(data.num_nodes, device=device))
-    #     z = TSNE(n_components=2).fit_transform(z.cpu().numpy())
-    #     y = data.y.cpu().numpy()
-    #
-    #     plt.figure(figsize=(8, 8))
-    #     for i in range(dataset.num_classes):
-    #         plt.scatter(z[y == i, 0], z[y == i, 1], s=20, color=colors[i])
-    #     plt.axis('off')
-    #     plt.show()
-
-    # colors = [
-    #     '#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535',
-    #     '#ffd700'
-    # ]
-    # plot_points(colors)
-
+""" 
+micro_f1 0.9677871148459384 macro_f1 0.327876631079478
+"""
 
 if __name__ == "__main__":
     main()

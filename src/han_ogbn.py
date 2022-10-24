@@ -8,24 +8,22 @@ import torch_geometric.transforms as T
 from torch_geometric.datasets import Planetoid
 from torch_geometric.data import InMemoryDataset, download_url
 # from torch_geometric.logging import init_wandb, log
-from torch_geometric.nn import GATConv
+from model.han_layer import HANConv
 from scipy.io import loadmat,savemat
-from torch_geometric.data import Data,DataLoader,Dataset
-from torch.nn import Linear, Parameter
+from torch_geometric.data import HeteroData,DataLoader,Dataset
 from data_loader.ogbn_mag_dataset_x import OgbnMagDataset
 
 import numpy as np
 from sklearn.metrics import f1_score
 
 # gdc =  True
-lr = 1E-4  # 5E-3
+lr = 5E-3 # 1E-4  #
 epochs = 100
 
 def label_to_vector(index):
-    vec = np.zeros([1,4])
+    vec = np.zeros([1,8])
     vec[0,index]=1.0
     return vec
-
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -35,24 +33,31 @@ data_set_train = DataLoader(data_set_train, batch_size=1, shuffle=True)
 data_set_test = OgbnMagDataset(mode='test')
 data_set_test = DataLoader(data_set_test, batch_size=1, shuffle=True)
 
+
 class GAT(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, heads):
         super().__init__()
-        #self.node_encoder = Linear(in_channels, hidden_channels)
-        self.conv1 = GATConv(in_channels, hidden_channels, heads, dropout=0.5)
+        metadata =(["paper","author"],
+                   [('paper', 'subject', 'paper'),
+                    ('author', 'Institute', 'author'),
+                    ('author', 'write', 'paper'),
+                    ('paper', 'from', 'author')])
+        self.conv1 = HANConv(in_channels, hidden_channels,metadata, heads, dropout=0.6)
         # On the Pubmed dataset, use `heads` output heads in `conv2`.
-        self.conv2 = GATConv(hidden_channels * heads, out_channels, heads=1,
-                             concat=False, dropout=0.5)
+        self.conv2 = HANConv(hidden_channels , out_channels,metadata, heads=1, dropout=0.6)
 
     def forward(self, x, edge_index):
-        #x = self.node_encoder(x)
-        x = F.dropout(x, p=0.5, training=self.training)
-        x = F.elu(self.conv1(x, edge_index))
-        x = F.dropout(x, p=0.5, training=self.training)
+        for key in x.keys():
+            x[key] = F.dropout(x[key], p=0.6, training=self.training)
+        x =self.conv1(x, edge_index)
+        for key in x.keys():
+            x[key] = F.elu(x[key])
+            x[key] = F.dropout(x[key], p=0.6, training=self.training)
+        #x = F.dropout(x, p=0.6, training=self.training)
         x = self.conv2(x, edge_index)
-        return x.softmax(dim=1)
+        return x
 
-model = GAT(128, 256, 4,4)
+model = GAT(128, 256, 4,8)
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
 batch_size = 32
@@ -72,11 +77,16 @@ def train():
             y_dict = data.y_dict
             mask_dict = data.mask_dict
 
-            out = model(x_dict["paper"], edge_dict[("paper","subject","paper")])
-            loss = F.cross_entropy(out[mask_dict["paper"]], y_dict["paper"])
+            out = model(x_dict, edge_dict)
+            loss = F.cross_entropy(out["paper"][mask_dict["paper"]], y_dict["paper"])
+            # optimizer.zero_grad()
             loss.backward()
+            #torch.nn.utils.clip_grad_norm_(model.parameters(),max_norm=1,norm_type=2)
+            # optimizer.step()
             total_loss += loss.item()
+            # print(loss.item(),end=" ")
         optimizer.step()
+        # print()
 
     return float(total_loss)
 
@@ -96,8 +106,8 @@ def test():
         y_dict = data.y_dict
         mask_dict = data.mask_dict
 
-        out = model(x_dict["paper"], edge_dict[("paper", "subject", "paper")])
-        out = out[mask_dict["paper"]]
+        out = model(x_dict, edge_dict)
+        out = out["paper"][mask_dict["paper"]]
         acc.append((torch.argmax(out, 1) == torch.argmax(data.y_dict['paper'], 1)).cpu().detach().numpy())
         y_hats.append(torch.argmax(out, 1).cpu().detach().numpy())
         y_labels.append(torch.argmax(data.y_dict['paper'], 1).cpu().detach().numpy())
@@ -131,5 +141,5 @@ print(bmac_list)
 print(np.array(bmac_list).mean())
 
 """
-    bmic:0.9559, bmac:0.2444
+
 """

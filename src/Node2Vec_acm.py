@@ -15,7 +15,7 @@ import numpy as np
 
 
 def main():
-    data_dir = r'/media/aslan/50E4BE16E4BDFDF2/DATA/CODE/new_project/datasets/acm'
+    data_dir = r'../exp/ogbn_mag/data'
     data_path = data_dir + r'/ACM_multi_graph.mat'
 
     datas = loadmat(data_path)

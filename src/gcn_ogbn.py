@@ -1,3 +1,5 @@
+import os
+# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 import argparse
 import os.path as osp
 
@@ -8,24 +10,32 @@ import torch_geometric.transforms as T
 from torch_geometric.datasets import Planetoid
 from torch_geometric.data import InMemoryDataset, download_url
 # from torch_geometric.logging import init_wandb, log
-from torch_geometric.nn import GATConv
+from torch_geometric.nn import GCNConv
 from scipy.io import loadmat,savemat
 from torch_geometric.data import Data,DataLoader,Dataset
-from torch.nn import Linear, Parameter
 from data_loader.ogbn_mag_dataset_x import OgbnMagDataset
 
 import numpy as np
 from sklearn.metrics import f1_score
 
-# gdc =  True
-lr = 1E-4  # 5E-3
+import random
+
+SEED = 12
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(SEED)
+random.seed(SEED)
+
+
+gdc =  False
+lr = 5E-3  # 1E-4 #
 epochs = 100
 
 def label_to_vector(index):
     vec = np.zeros([1,4])
     vec[0,index]=1.0
     return vec
-
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -35,26 +45,29 @@ data_set_train = DataLoader(data_set_train, batch_size=1, shuffle=True)
 data_set_test = OgbnMagDataset(mode='test')
 data_set_test = DataLoader(data_set_test, batch_size=1, shuffle=True)
 
-class GAT(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, heads):
-        super().__init__()
-        #self.node_encoder = Linear(in_channels, hidden_channels)
-        self.conv1 = GATConv(in_channels, hidden_channels, heads, dropout=0.5)
-        # On the Pubmed dataset, use `heads` output heads in `conv2`.
-        self.conv2 = GATConv(hidden_channels * heads, out_channels, heads=1,
-                             concat=False, dropout=0.5)
 
-    def forward(self, x, edge_index):
-        #x = self.node_encoder(x)
+class GCN(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels):
+        super().__init__()
+        self.conv1 = GCNConv(in_channels, hidden_channels, cached=True,
+                             normalize=False)
+        self.conv2 = GCNConv(hidden_channels, out_channels, cached=True,
+                             normalize=False)
+
+    def forward(self, x, edge_index, edge_weight=None):
         x = F.dropout(x, p=0.5, training=self.training)
-        x = F.elu(self.conv1(x, edge_index))
+        x = self.conv1(x, edge_index)
+        x = F.elu(x)
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.conv2(x, edge_index)
         return x.softmax(dim=1)
 
-model = GAT(128, 256, 4,4)
+model = GCN(128, 256, 4)
 model = model.to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
+optimizer = torch.optim.Adam([
+    dict(params=model.conv1.parameters(), weight_decay=5e-4),
+    dict(params=model.conv2.parameters(), weight_decay=0)
+], lr=lr)  # Only perform weight-decay on first convolution.
 batch_size = 32
 length = len(data_set_train)
 
@@ -79,6 +92,7 @@ def train():
         optimizer.step()
 
     return float(total_loss)
+
 
 @torch.no_grad()
 def test():
@@ -131,5 +145,6 @@ print(bmac_list)
 print(np.array(bmac_list).mean())
 
 """
-    bmic:0.9559, bmac:0.2444
+bmic:0.9559, bmac:0.2444
+
 """

@@ -45,48 +45,6 @@ data_set_train = DataLoader(data_set_train, batch_size=1, shuffle=True)
 data_set_test = ACMDataset(mode='test')
 data_set_test = DataLoader(data_set_test, batch_size=1, shuffle=True)
 
-# data_dir = r'/media/aslan/50E4BE16E4BDFDF2/DATA/CODE/new_project/datasets/acm'
-# data_path = data_dir + r'/ACM_multi_graph.mat'
-#
-# datas = loadmat(data_path)
-# # feature0 = datas['NF0']
-# feature1 = datas['PT']
-# # feature2 = datas['NF2']
-# # feature3 = datas['NF3']
-#
-# # A00 = datas['A00']
-# A11 = datas['PSP']
-# A11_index = A11.nonzero()
-# # A22 = datas['A22']
-# # A33 = datas['A33']
-#
-# train_list = datas['train_idx']
-# train_label = datas['train_taget']  # not one hot
-# train_label_oh  = np.zeros((train_label.shape[1],4))
-# for i in range(train_label.shape[1]):
-#     train_label_oh[i] = label_to_vector(train_label[:,i])
-# train_label_th = torch.from_numpy(train_label_oh).to(device)
-# test_list = datas['test_idx']
-# test_label = datas['test_taget']
-# test_label_oh  = np.zeros((test_label.shape[1],4))
-# for i in range(test_label.shape[1]):
-#     test_label_oh[i] = label_to_vector(test_label[:,i])
-# test_label_th = torch.from_numpy(test_label_oh).to(device)
-# data = Data(x = torch.from_numpy(feature1).float(),
-#             edge_index=torch.stack([torch.from_numpy(A11_index[0].astype(np.int64)),
-#                                     torch.from_numpy(A11_index[1].astype(np.int64))], dim=0))
-#
-#
-# if gdc:
-#     transform = T.GDC(
-#         self_loop_weight=1,
-#         normalization_in='sym',
-#         normalization_out='col',
-#         diffusion_kwargs=dict(method='ppr', alpha=0.05),
-#         sparsification_kwargs=dict(method='topk', k=128, dim=0),
-#         exact=True,
-#     )
-#     data = transform(data)
 
 class GCN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels):
@@ -113,15 +71,6 @@ optimizer = torch.optim.Adam([
 batch_size = 32
 length = len(data_set_train)
 
-# def train():
-#     model.train()
-#     optimizer.zero_grad()
-#     out = model(data.x, data.edge_index, data.edge_weight)
-#     loss = F.cross_entropy(out[train_list], train_label_th)
-#     loss.backward()
-#     optimizer.step()
-#     return float(loss)
-
 def train():
     iter_data = iter(data_set_train)
     total_loss = 0
@@ -144,17 +93,6 @@ def train():
 
     return float(total_loss)
 
-# @torch.no_grad()
-# def test():
-#     model.eval()
-#     pred = model(data.x, data.edge_index, data.edge_weight).argmax(dim=-1)
-#
-#     micre_f1 = f1_score(pred[test_list].cpu().detach().numpy(), test_label[0], average="micro")
-#     macre_f1 = f1_score(pred[test_list].cpu().detach().numpy(), test_label[0], average="macro")
-#     # accs = []
-#     # for mask in [data.train_mask, data.val_mask, data.test_mask]:
-#     #     accs.append(int((pred[mask] == data.y[mask]).sum()) / int(mask.sum()))
-#     return micre_f1,macre_f1
 
 @torch.no_grad()
 def test():

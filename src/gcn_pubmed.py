@@ -17,7 +17,7 @@ import numpy as np
 from sklearn.metrics import f1_score
 
 gdc =  False
-lr = 5E-3  # 1E-4 #
+lr = 5E-4  # 1E-4 #
 epochs = 100
 
 def label_to_vector(index):
@@ -89,7 +89,7 @@ class GCN(torch.nn.Module):
         x = F.elu(self.conv1(x, edge_index, edge_weight))
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.conv2(x, edge_index, edge_weight)
-        return x.softmax(dim=1)
+        return x.softmax(dim=-1)
 
 model = GCN(200, 256, 8)
 model = model.to(device)
@@ -97,7 +97,7 @@ optimizer = torch.optim.Adam([
     dict(params=model.conv1.parameters(), weight_decay=5e-4),
     dict(params=model.conv2.parameters(), weight_decay=0)
 ], lr=lr)  # Only perform weight-decay on first convolution.
-batch_size = 32
+batch_size = 368
 length = len(data_set_train)
 
 # def train():
@@ -127,6 +127,8 @@ def train():
             loss = F.cross_entropy(out[mask_dict["domain1"]], y_dict["domain1"])
             loss.backward()
             total_loss += loss.item()
+        # total_loss /= batch_size
+        # total_loss.backward()
         optimizer.step()
 
     return float(total_loss)

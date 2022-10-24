@@ -162,5 +162,5 @@ def preprocess(dir):
 
 
 if __name__ == "__main__":
-    dir = r'/media/aslan/50E4BE16E4BDFDF2/DATA/CODE/HNE-master/Model/MAGNN/data/PubMed'
+    dir = r'../exp/pubmed/data'
     preprocess(dir)
