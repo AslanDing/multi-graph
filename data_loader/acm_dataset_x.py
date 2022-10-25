@@ -248,7 +248,7 @@ class ACMDataset(Dataset):
             data = torch.load(os.path.join(self.processed_dir,"test"+f"_data_{id}.pt"))
         elif self.mode == 'val':
             id = item % self.val_idx.shape[1]
-            data = torch.load(os.path.join(self.processed_dir,"test"+f"_data_{id}.pt"))
+            data = torch.load(os.path.join(self.processed_dir,"val"+f"_data_{id}.pt"))
 
         return data
 
