@@ -133,7 +133,7 @@ class Trainer(BaseTrainer):
 
                 y_hat, w_dict, \
                 multi_embedding_pool, multi_src_embedding_pool, \
-                node_embedding_sub = self.model(x_dict, edge_dict,batch_dict)
+                node_embedding_sub = self.model(x_dict, edge_dict,batch_dict,mask_dict)
 
                 # cal loss
                 # entry

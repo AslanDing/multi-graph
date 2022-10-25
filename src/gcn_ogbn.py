@@ -32,8 +32,8 @@ gdc =  False
 lr = 5E-3  # 1E-4 #
 epochs = 100
 
-def label_to_vector(index):
-    vec = np.zeros([1,4])
+def label_to_vector(index,len=5):
+    vec = np.zeros([1,len])
     vec[0,index]=1.0
     return vec
 
@@ -42,7 +42,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 data_set_train = OgbnMagDataset(mode='train')
 data_set_train = DataLoader(data_set_train, batch_size=1, shuffle=True)
 
-data_set_test = OgbnMagDataset(mode='test')
+data_set_test = OgbnMagDataset(mode='val')
 data_set_test = DataLoader(data_set_test, batch_size=1, shuffle=True)
 
 
@@ -62,7 +62,7 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return x.softmax(dim=1)
 
-model = GCN(128, 256, 4)
+model = GCN(128, 256, 5)
 model = model.to(device)
 optimizer = torch.optim.Adam([
     dict(params=model.conv1.parameters(), weight_decay=5e-4),
@@ -91,7 +91,7 @@ def train():
             total_loss += loss.item()
         optimizer.step()
 
-    return float(total_loss)
+    return float(total_loss/length)
 
 
 @torch.no_grad()
@@ -145,6 +145,6 @@ print(bmac_list)
 print(np.array(bmac_list).mean())
 
 """
-bmic:0.9559, bmac:0.2444
+bmic:0.7267355982274741, bmac:0.16834901625320783
 
 """

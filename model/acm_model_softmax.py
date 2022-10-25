@@ -11,9 +11,10 @@ from model.basic_layers import GNNNodeEmbed,EdgePred
 from model.layers_utils import gumbel_softmax
 
 class MultiGraph(nn.Module):
-    def __init__(self,x_dim=1902,y_dim=3):
+    def __init__(self,x_dim=1902,y_dim=3,k=5):
         super(MultiGraph, self).__init__()
 
+        self.k = k
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.aim_key = 'paper'

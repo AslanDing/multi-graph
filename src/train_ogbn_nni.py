@@ -5,7 +5,7 @@ import numpy as np
 import model.loss as module_loss
 from data_loader.ogbn_mag_dataset_x import OgbnMagDataset
 from config.parse_config import ConfigParser
-from model.ogbn_mag_model import MultiGraph
+from model.ogbn_mag_model_softmax import MultiGraph
 from torch_geometric.data import DataLoader
 import random
 from utils import prepare_device

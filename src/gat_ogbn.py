@@ -21,8 +21,8 @@ from sklearn.metrics import f1_score
 lr = 1E-4  # 5E-3
 epochs = 100
 
-def label_to_vector(index):
-    vec = np.zeros([1,4])
+def label_to_vector(index,len=5):
+    vec = np.zeros([1,len])
     vec[0,index]=1.0
     return vec
 
@@ -32,7 +32,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 data_set_train = OgbnMagDataset(mode='train')
 data_set_train = DataLoader(data_set_train, batch_size=1, shuffle=True)
 
-data_set_test = OgbnMagDataset(mode='test')
+data_set_test = OgbnMagDataset(mode='val')
 data_set_test = DataLoader(data_set_test, batch_size=1, shuffle=True)
 
 class GAT(torch.nn.Module):
@@ -52,7 +52,7 @@ class GAT(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return x.softmax(dim=1)
 
-model = GAT(128, 256, 4,4)
+model = GAT(128, 256, 5,4)
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
 batch_size = 32
@@ -131,5 +131,5 @@ print(bmac_list)
 print(np.array(bmac_list).mean())
 
 """
-    bmic:0.9559, bmac:0.2444
+    mic:0.7267, bmac:0.1683
 """

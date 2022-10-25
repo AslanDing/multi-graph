@@ -20,8 +20,8 @@ from sklearn.metrics import f1_score
 lr = 5E-3 # 1E-4  #
 epochs = 100
 
-def label_to_vector(index):
-    vec = np.zeros([1,8])
+def label_to_vector(index,len=5):
+    vec = np.zeros([1,len])
     vec[0,index]=1.0
     return vec
 
@@ -30,7 +30,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 data_set_train = OgbnMagDataset(mode='train')
 data_set_train = DataLoader(data_set_train, batch_size=1, shuffle=True)
 
-data_set_test = OgbnMagDataset(mode='test')
+data_set_test = OgbnMagDataset(mode='val')
 data_set_test = DataLoader(data_set_test, batch_size=1, shuffle=True)
 
 
@@ -42,22 +42,22 @@ class GAT(torch.nn.Module):
                     ('author', 'Institute', 'author'),
                     ('author', 'write', 'paper'),
                     ('paper', 'from', 'author')])
-        self.conv1 = HANConv(in_channels, hidden_channels,metadata, heads, dropout=0.6)
+        self.conv1 = HANConv(in_channels, hidden_channels,metadata, heads, dropout=0.5)
         # On the Pubmed dataset, use `heads` output heads in `conv2`.
-        self.conv2 = HANConv(hidden_channels , out_channels,metadata, heads=1, dropout=0.6)
+        self.conv2 = HANConv(hidden_channels , out_channels,metadata, heads=1, dropout=0.5)
 
     def forward(self, x, edge_index):
         for key in x.keys():
-            x[key] = F.dropout(x[key], p=0.6, training=self.training)
+            x[key] = F.dropout(x[key], p=0.5, training=self.training)
         x =self.conv1(x, edge_index)
         for key in x.keys():
             x[key] = F.elu(x[key])
-            x[key] = F.dropout(x[key], p=0.6, training=self.training)
+            x[key] = F.dropout(x[key], p=0.5, training=self.training)
         #x = F.dropout(x, p=0.6, training=self.training)
         x = self.conv2(x, edge_index)
         return x
 
-model = GAT(128, 256, 4,8)
+model = GAT(128, 256, 5,4)
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
 batch_size = 32
@@ -78,6 +78,7 @@ def train():
             mask_dict = data.mask_dict
 
             out = model(x_dict, edge_dict)
+
             loss = F.cross_entropy(out["paper"][mask_dict["paper"]], y_dict["paper"])
             # optimizer.zero_grad()
             loss.backward()
@@ -88,7 +89,7 @@ def train():
         optimizer.step()
         # print()
 
-    return float(total_loss)
+    return float(total_loss/length)
 
 @torch.no_grad()
 def test():
@@ -141,5 +142,5 @@ print(bmac_list)
 print(np.array(bmac_list).mean())
 
 """
-
+bmic:0.1329, bmac:0.0558
 """
