@@ -40,13 +40,13 @@ def propcess(path= '../exp/ogbn_mag/data/geometric_data_processed.pt'):
     paper_data = data[0]['x_dict']['paper'].numpy()
     y_data = data[0]['y_dict']['paper'].numpy()
 
-    # num_label = {}
-    # for i in range(y_data.max()):
-    #     result_tmp = np.where(y_data == i)
-    #     num_label[i]=result_tmp[0].shape[0]
-    #     print()
-    #
-    # num_label = sorted(num_label.items(),key=lambda  x:x[1],reverse=True)
+    num_label = {}
+    for i in range(y_data.max()):
+        result_tmp = np.where(y_data == i)
+        num_label[i]=result_tmp[0].shape[0]
+        print()
+
+    num_label = sorted(num_label.items(),key=lambda  x:x[1],reverse=True)
     # 214 52 219 304 221
     idlists = []
     idx0, idx1 = np.where(y_data == 214)
@@ -61,7 +61,7 @@ def propcess(path= '../exp/ogbn_mag/data/geometric_data_processed.pt'):
     idlists.extend(idx0)
 
     # smple
-    samples_paper = idx0
+    samples_paper = idlists
 
     author_paper = edge_data[('author', 'writes', 'paper')].numpy()
     row = author_paper[0, :]

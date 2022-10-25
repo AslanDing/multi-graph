@@ -221,6 +221,7 @@ class OgbnMagDataset(Dataset):
                 data['author', 'write', 'paper']['mask'] = torch.tensor(author_paper[0].shape[0]).to(torch.long)
 
                 data['paper'].y = torch.from_numpy(label.reshape([1, -1])).float()
+                print(name_for_save + f"_data_{item}.pt")
                 torch.save(data, os.path.join(self.processed_dir, name_for_save + f"_data_{item}.pt"))
 
 
@@ -242,7 +243,7 @@ class OgbnMagDataset(Dataset):
             data = torch.load(os.path.join(self.processed_dir,"test"+f"_data_{id}.pt"))
         elif self.mode == 'val':
             id = item % self.val_idx.shape[1]
-            data = torch.load(os.path.join(self.processed_dir,"test"+f"_data_{id}.pt"))
+            data = torch.load(os.path.join(self.processed_dir,"val"+f"_data_{id}.pt"))
 
         return data
 

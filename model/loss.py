@@ -74,7 +74,7 @@ def entropy_loss(sigma, rho, beta, alpha, entropy_fn = vn_entropy):
     sigma_diag = torch.diag(sigma)
 
     if sigma_diag.sum()==0:
-        return 0
+        return torch.tensor(0.).to(sigma.device)
 
     connectivity_loss = alpha * torch.sum(torch.log(sigma_diag[sigma_diag>0]))
     #print(connectivity_loss)
