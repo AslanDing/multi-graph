@@ -142,5 +142,5 @@ print(bmac_list)
 print(np.array(bmac_list).mean())
 
 """
-bmic:0.1329, bmac:0.0558
+bmic:0.8542, bmac:0.3934
 """
