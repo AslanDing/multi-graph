@@ -243,12 +243,12 @@ class Trainer(BaseTrainer):
                 query_vector = multi_graph_sub_emb[i]
                 positve_vector = multi_graph_src_emb[i]
                 mi_loss_tmp = mi_loss(query_vector,positve_vector,multi_graph_src_emb,i)
-                mi_loss_multi += torch.relu(mi_loss_tmp)
+                mi_loss_multi += mi_loss_tmp # torch.relu()
 
                 query_vector = domain_sub_graph_paper[i]
                 positve_vector = domain_sub_graph_author[i]
-                mi_loss_tmp = mi_loss(query_vector, positve_vector, multi_graph_src_emb, i)
-                mi_loss_cross += torch.relu(mi_loss_tmp)
+                mi_loss_tmp = mi_loss(query_vector, positve_vector, domain_sub_graph_author, i)
+                mi_loss_cross += mi_loss_tmp # torch.relu()
 
             loss_entry_all /= self.batch_size
             pri_loss_all /= self.batch_size

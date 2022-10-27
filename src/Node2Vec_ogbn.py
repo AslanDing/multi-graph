@@ -95,7 +95,7 @@ def main():
     print(bmac_list)
     print(np.array(bmac_list).mean())
 """ 
-micro_f1 
+micro_f1  0.3960, bmac:0.3662
 """
 
 if __name__ == "__main__":

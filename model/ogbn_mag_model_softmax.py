@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
-from torch_geometric.nn import global_add_pool
+from torch_geometric.nn import global_add_pool,global_mean_pool,global_max_pool
 from torch.nn import Linear, Parameter
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
@@ -61,9 +61,9 @@ class MultiGraph(nn.Module):
                     new_edge_indexs[key] = edge_index[key]
 
             multi_embedding = self.multi_gnn_embedding(x, edge_index, single=False, edge_attn=w_weight)
-            multi_embedding_pool = multi_embedding[self.aim_key][index, :].reshape(1, -1)
-            # multi_embedding_pool =global_add_pool(multi_embedding[self.aim_key],
-            #                                       batch[self.aim_key])
+            # multi_embedding_pool = multi_embedding[self.aim_key][index, :].reshape(1, -1)
+            multi_embedding_pool =global_max_pool(multi_embedding[self.aim_key],
+                                                  batch[self.aim_key])
             y_hat = self.classify(multi_embedding_pool)
 
             sub_x_embedding = self.multi_gnn_embedding(x, edge_index, single=True, edge_attn=w_weight)
@@ -72,7 +72,7 @@ class MultiGraph(nn.Module):
                 if sub_x_embedding[key].shape[0] <= 1:
                     _embedding = sub_x_embedding[key]
                 else:
-                    _embedding = global_add_pool(sub_x_embedding[key], batch[key])
+                    _embedding = global_max_pool(sub_x_embedding[key], batch[key])
                 node_embedding_sub[key] = _embedding
 
             src_multi_embedding = self.multi_gnn_embedding(x, edge_index, single=False)
@@ -110,8 +110,8 @@ class MultiGraph(nn.Module):
                     new_edge_indexs[key] = edge_index[key]
 
             multi_embedding = self.multi_gnn_embedding(x, edge_index, single=False, edge_attn=w_weight)
-            multi_embedding_pool = multi_embedding[self.aim_key][index, :].reshape(1, -1)
-            # multi_embedding_pool = global_add_pool(multi_embedding[self.aim_key],
-            #                                        batch[self.aim_key])
+            # multi_embedding_pool = multi_embedding[self.aim_key][index, :].reshape(1, -1)
+            multi_embedding_pool = global_max_pool(multi_embedding[self.aim_key],
+                                                   batch[self.aim_key])
             y_hat = self.classify(multi_embedding_pool)
             return y_hat.softmax(dim=1), new_edge_indexs

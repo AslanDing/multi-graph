@@ -15,11 +15,13 @@ def mi_loss(query,pos_sample,neg_samples,pass_i):
     neg_samples = normalize(*neg_samples)
 
     if query.shape[0]<1:
-        return 0
+        return torch.tensor(0.).to(query.device)
+
     if pos_sample.shape[0]<1:
-        return 0
+        return torch.tensor(0.).to(query.device)
+
     if len(neg_samples)<=1:
-        return 0
+        return torch.tensor(0.).to(query.device)
 
     sum_k_1 = 0
     count = 0
@@ -28,17 +30,21 @@ def mi_loss(query,pos_sample,neg_samples,pass_i):
             continue
         if sample.shape[0]<1:
             continue
-        sum_k_1 += torch.exp(query@sample.transpose(1,0)).sum()
+        tmp = torch.exp(query@sample.transpose(1,0)).sum()
+        sum_k_1 += tmp
         count += 1
     if sum_k_1 == 0 or count==0:
-        return 0
+        return torch.tensor(0.).to(query.device)
 
-    sum_k_1 /= count
+    pos = torch.exp(query@pos_sample.transpose(1,0)).sum()
+    sum_k_1 =(sum_k_1+pos) /(count+1)
+    # sum_k_1 =(sum_k_1) /(count)
 
-    result = torch.log( torch.exp(query@pos_sample.transpose(1,0)).sum()/sum_k_1 )
+    result = torch.log( pos/sum_k_1 )
+
     if torch.isinf(result) or torch.isnan(result):
         print(" inf or nan ")
-        return 0
+        return torch.tensor(0.).to(result.device)
     return result
 
 def incidence(edge):
@@ -58,7 +64,7 @@ def vn_entropy(k, eps=1e-8):
         eigv = torch.abs(torch.symeig(k, eigenvectors=True)[0])
     except Exception:
         print("error torch.linalg.eigvalsh ")
-        return 0
+        return torch.tensor(0.).to(k.device)
     entropy = - torch.sum(eigv[eigv>0]*torch.log(eigv[eigv>0]+eps))
     #print("entropy ", entropy.cpu().detach().item())
     # if torch.abs(entropy)<0.5:
