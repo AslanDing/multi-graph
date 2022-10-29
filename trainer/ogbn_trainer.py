@@ -41,7 +41,7 @@ class Trainer(BaseTrainer):
 
         self.length = len(self.train_data_set)
 
-        self.do_validation = False
+        self.do_validation = True
 
         self.log_step = 1
 

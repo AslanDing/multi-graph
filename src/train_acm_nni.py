@@ -74,6 +74,8 @@ def main(config,argx):
                           test_data_set=data_set_test,
                           logger = logger,
                           params= params)
+        trainer._test_epoch()
+        trainer._valid_epoch(1)
         trainer.train()
         # trainer._test_epoch()
     except Exception as e:

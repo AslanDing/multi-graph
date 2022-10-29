@@ -72,6 +72,22 @@ class OgbnMagDataset(Dataset):
             # count_x = (self.author_institution @ (self.author_institution.sum(axis=0).transpose()-1)).sum()/2
             # count = len(self.paper_author.nonzero()[0]) + len(self.paper_cite_paper.nonzero()[0])
 
+            # label_count = {}
+            # val_num = self.Paper_Label[self.test_idx]
+            # count = np.where(val_num == 0)
+            # label_count[0] = len(count[0])
+            #
+            # count = np.where(val_num == 1)
+            # label_count[1] = len(count[0])
+            #
+            # count = np.where(val_num == 2)
+            # label_count[2] = len(count[0])
+            #
+            # count = np.where(val_num == 3)
+            # label_count[3] = len(count[0])
+            #
+            # count = np.where(val_num == 4)
+            # label_count[4] = len(count[0])
             del datas
             data = HeteroData()
             data['paper'].x = torch.from_numpy(self.paper_feature).float()

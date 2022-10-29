@@ -14,7 +14,7 @@ from trainer.ogbn_trainer import Trainer
 import nni
 from nni.utils import merge_parameter
 
-SEED = 123
+SEED = 12 #3
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -66,10 +66,11 @@ def main(config,argx):
                           config=config,
                           device=device,
                           train_data_set=data_set_train,
-                          val_data_set=data_set_test,
+                          val_data_set=data_set_val,
                           test_data_set=data_set_test,
                           logger=logger,
                           params=params)
+        trainer._valid_epoch(1)
         trainer.train()
     except Exception as e:
         print(e)
@@ -86,9 +87,9 @@ if __name__ == '__main__':
                       help='path to latest checkpoint (default: None)')
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
-    args.add_argument('--batch_size', type=int, default=64, metavar='N',
+    args.add_argument('--batch_size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
-    args.add_argument('--learning_rate', type=float, default=0.0008, metavar='LR',
+    args.add_argument('--learning_rate', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.01)')
     # custom cli options to modify configuration from default values given in json file.
     # CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
