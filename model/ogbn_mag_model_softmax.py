@@ -28,7 +28,7 @@ class MultiGraph(nn.Module):
         #                             ('author', 'Institute', 'author')])
         self.edge_pred = EdgePred(self.node_keys, self.edge_keys[:2], 256)  # self.single_gnn_embedding.hidden_size
 
-        self.multi_gnn_embedding = GNNNodeEmbed(x_dim, self.edge_keys)
+        self.multi_gnn_embedding = GNNNodeEmbed(x_dim, self.edge_keys,layer=2)
 
         self.classify = nn.Linear(self.multi_gnn_embedding.hidden_size, y_dim)
 

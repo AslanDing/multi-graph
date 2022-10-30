@@ -48,7 +48,7 @@ class GINConv(BaseGINConv):
             return x_j
 
 class GNNNodeEmbed(nn.Module):
-    def __init__(self,x_dim,edge_dict_list,layer=5):
+    def __init__(self,x_dim,edge_dict_list,layer=2):
         super().__init__()
         self.n_layers = layer
         self.dropout_p = 0.6
