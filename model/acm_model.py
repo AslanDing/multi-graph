@@ -2,19 +2,17 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
-from torch_geometric.nn import global_add_pool,global_mean_pool,global_max_pool
+from torch_geometric.nn import global_add_pool
 from torch.nn import Linear, Parameter
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
 
 from model.basic_layers import GNNNodeEmbed,EdgePred
-from model.layers_utils import gumbel_softmax
 
 class MultiGraph(nn.Module):
-    def __init__(self,x_dim=1902,y_dim=3,k=5):
+    def __init__(self,x_dim=1902,y_dim=3):
         super(MultiGraph, self).__init__()
 
-        self.k = k
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.aim_key = 'paper'
@@ -31,85 +29,56 @@ class MultiGraph(nn.Module):
 
     def forward(self,x, edge_index,batch,index):
         if self.training:
-            x_embedding = self.multi_gnn_embedding(x, edge_index, single=True)
-            edge_pred = self.edge_pred(x_embedding, edge_index)
+            x_embedding = self.multi_gnn_embedding(x,edge_index,single=True)
+            edge_pred = self.edge_pred(x_embedding,edge_index)
 
-            new_edge_indexs = {}
-            w_weight = {}
-            for key in edge_index.keys():
-                if key[0] == key[2]:
-                    shape = x_embedding[key[0]].shape  # size=(shape[0],shape[0])
-                    pred = edge_pred[key]
-                    idx = edge_index[key]
-                    if shape[0] < self.k:
-                        new_edge_indexs[key] = idx
-                        weight = torch.ones_like(pred[:, 0])
-                        w_weight[key] = weight
-                        continue
-                    spare_tensor = torch.sparse_coo_tensor(idx, pred[:, 0], size=[shape[0], shape[0]],
-                                                           requires_grad=True).to_dense()
-                    mask = torch.where(spare_tensor > 0, torch.ones_like(spare_tensor), torch.zeros_like(spare_tensor))
-                    spare_tensor = gumbel_softmax(spare_tensor, mask, self.k, 1, hard=True)
-                    weight = spare_tensor[idx[0], idx[1]]
-                    w_weight[key] = weight
-                    new_edge = torch.nonzero(spare_tensor).T
-                    new_edge_indexs[key] = new_edge
-                else:
-                    new_edge_indexs[key] = edge_index[key]
+            z_dict = {}
+            w_dict = {}
+            # w_ones_dict = {}
+            for key in edge_pred.keys():
+                z = F.gumbel_softmax(edge_pred[key], 1, hard=True)
+                z_dict[key] = z
+                w = z[:, 1].squeeze()  # edge attention
+                w_dict[key] = w
+                # w_ones_dict[key] = torch.ones_like(w)
 
-            multi_embedding = self.multi_gnn_embedding(x, edge_index, single=False, edge_attn=w_weight)
+            #w_dict =  w_dict_list[0]
+            multi_embedding = self.multi_gnn_embedding(x, edge_index,edge_attn=w_dict)
             multi_embedding_pool = multi_embedding[self.aim_key][index, :].reshape(1, -1)
-            # multi_embedding_pool =global_max_pool(multi_embedding[self.aim_key],
-            #                                       batch[self.aim_key])
             y_hat = self.classify(multi_embedding_pool)
 
-            sub_x_embedding = self.multi_gnn_embedding(x, edge_index, single=True, edge_attn=w_weight)
+
+            sub_x_embedding = self.multi_gnn_embedding(x,edge_index,edge_attn=w_dict,single=True)
             node_embedding_sub = {}
             for key in sub_x_embedding.keys():
                 if sub_x_embedding[key].shape[0] <= 1:
                     _embedding = sub_x_embedding[key]
                 else:
-                    _embedding = global_mean_pool(sub_x_embedding[key], batch[key])
-                    # _embedding = global_max_pool(sub_x_embedding[key], batch[key])
+                    _embedding = global_add_pool(sub_x_embedding[key], batch[key])
                 node_embedding_sub[key] = _embedding
 
-            src_multi_embedding = self.multi_gnn_embedding(x, edge_index, single=False)
+            # multi_src_embedding_pool ={}
+            src_multi_embedding = self.multi_gnn_embedding(x, edge_index,single=False)
             multi_src_embedding_pool = src_multi_embedding[self.aim_key][index, :].reshape(1, -1)
-            # multi_src_embedding_pool = global_max_pool(src_multi_embedding[self.aim_key],
-            #                                        batch[self.aim_key])
-            return y_hat, w_weight, \
-                   multi_embedding_pool, multi_src_embedding_pool, \
+
+            return y_hat.softmax(dim=1), w_dict,\
+                   multi_embedding_pool, multi_src_embedding_pool,\
                    node_embedding_sub
         else:
-            x_embedding = self.multi_gnn_embedding(x, edge_index, single=True)
+            x_embedding = self.multi_gnn_embedding(x, edge_index,single=True)
             edge_pred = self.edge_pred(x_embedding, edge_index)
 
-            new_edge_indexs = {}
-            w_weight = {}
-            for key in edge_index.keys():
-                if key[0] == key[2]:
-                    shape = x_embedding[key[0]].shape  # size=(shape[0],shape[0])
-                    pred = edge_pred[key]
-                    idx = edge_index[key]
-                    if shape[0] < self.k:
-                        new_edge_indexs[key] = idx
-                        weight = torch.ones_like(pred[:, 0])
-                        w_weight[key] = weight
-                        continue
-                    spare_tensor = torch.sparse_coo_tensor(idx, pred[:, 0], size=[shape[0], shape[0]],
-                                                           requires_grad=True).to_dense()
-                    mask = torch.where(spare_tensor > 0, torch.ones_like(spare_tensor), torch.zeros_like(spare_tensor))
-                    spare_tensor = gumbel_softmax(spare_tensor, mask, self.k, 1, hard=True)
-                    weight = spare_tensor[idx[0], idx[1]]
-                    w_weight[key] = weight
-                    new_edge = torch.nonzero(spare_tensor).T
-                    new_edge_indexs[key] = new_edge
-                else:
-                    new_edge_indexs[key] = edge_index[key]
+            z_dict = {}
+            w_dict = {}
+            # w_ones_dict = {}
+            for key in edge_pred.keys():
+                z = F.gumbel_softmax(edge_pred[key], 1, hard=True)
+                z_dict[key] = z
+                w = z[:, 1].squeeze()  # edge attention
+                w_dict[key] = w
+            #     w_ones_dict[key] = torch.ones_like(w)
 
-            multi_embedding = self.multi_gnn_embedding(x, edge_index, single=False, edge_attn=w_weight)
+            multi_embedding = self.multi_gnn_embedding(x, edge_index,edge_attn=w_dict,single=False)
             multi_embedding_pool = multi_embedding[self.aim_key][index, :].reshape(1, -1)
-            # multi_embedding_pool = global_max_pool(multi_embedding[self.aim_key],
-            #                                        batch[self.aim_key])
             y_hat = self.classify(multi_embedding_pool)
-            return y_hat, new_edge_indexs
+            return y_hat.softmax(dim=1),w_dict

@@ -8,7 +8,7 @@ import numpy as np
 import model.loss as module_loss
 from data_loader.acm_dataset_x import ACMDataset
 from config.parse_config import ConfigParser
-from model.acm_model import MultiGraph
+from model.acm_model_softmax import MultiGraph
 from torch_geometric.data import DataLoader
 import random
 from utils import prepare_device
