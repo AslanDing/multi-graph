@@ -144,6 +144,14 @@ class OgbnMagDataset(Dataset):
                             row = indexs[0][j]
                             col = indexs[1][j]
                             select_tmp.append(row)
+
+                        indexs = self.paper_cite_paper[ii,:].nonzero()
+                        for j in range(len(indexs[0])):
+                            row = indexs[0][j]
+                            col = indexs[1][j]
+                            select_tmp.append(col)
+
+
                         if len(select_tmp) <= 0:
                             continue
                         elif len(select_tmp) < self.k_list[i]:

@@ -105,3 +105,8 @@ if __name__ == '__main__':
     config = ConfigParser.from_args(args)
     main(config,argx)
 
+"""
+micro_f1 0.9009433962264151 macro_f1 0.9018189725346613
+
+best  micro_f1 0.9047169811320754 macro_f1 0.9051804342678867
+"""

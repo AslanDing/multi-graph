@@ -301,7 +301,7 @@ class Trainer(BaseTrainer):
             self.train_metrics.update('loss', total_loss)
             self.train_metrics.update('gib_log', loss_entry_all)
             self.train_metrics.update('gib_mi', mi_loss_multi)
-            self.train_metrics.update('cross_mi', pri_loss_all)
+            self.train_metrics.update('pri', pri_loss_all)
             self.train_metrics.update('cross_mi', mi_loss_cross)
 
             if batch_idx % self.log_step == 0:
