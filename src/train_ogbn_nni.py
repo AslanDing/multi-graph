@@ -81,13 +81,13 @@ def main(config,argx):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
-    args.add_argument('-c', '--config', default='../config/ogbn_config.json', type=str, #
+    args.add_argument('-c', '--config', default='../config/ogbn_config.json', type=str, # '../config/ogbn_config.json'
                       help='config file path (default: None)')
-    args.add_argument('-r', '--resume', default=r'../exp/ogbn-mag/models/ogbn/1101_202903/checkpoint-epoch22.pth', type=str,
-                      help='path to latest checkpoint (default: None)')
+    args.add_argument('-r', '--resume', default=None, type=str,
+                      help='path to latest checkpoint (default: None)')  # r'../exp/ogbn-mag/models/ogbn/1101_202903/checkpoint-epoch22.pth'
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
-    args.add_argument('--batch_size', type=int, default=128, metavar='N',
+    args.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     args.add_argument('--learning_rate', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.01)')
@@ -101,3 +101,6 @@ if __name__ == '__main__':
     config = ConfigParser.from_args(args)
     main(config,argx)
 
+"""
+best  micro_f1 0.4430871737923376 macro_f1 0.16005625879043603
+"""
