@@ -123,4 +123,4 @@ class MultiGraph(nn.Module):
             # multi_embedding_pool = global_add_pool(multi_embedding[self.aim_key],
             #                                        batch[self.aim_key])
             y_hat = self.classify(multi_embedding_pool)
-            return y_hat.softmax(dim=1),new_edge_indexs
+            return y_hat.softmax(dim=1),w_weight

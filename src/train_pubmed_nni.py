@@ -17,7 +17,7 @@ from trainer.pubmed_nni_trainer import Trainer
 import nni
 from nni.utils import merge_parameter
 
-SEED = 123
+SEED = 12#3
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -72,8 +72,8 @@ def main(config,argx):
                           logger=logger,
                           params= params)
 
-        # trainer._visiual_epoch()
-        trainer.train()
+        trainer._visiual_epoch()
+        # trainer.train()
         # trainer._test_epoch()
 
     except Exception as e:
@@ -83,9 +83,9 @@ def main(config,argx):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
-    args.add_argument('-c', '--config', default='../config/pubmed_config.json', type=str, #
+    args.add_argument('-c', '--config', default=None , type=str, #'../config/pubmed_config.json'
                       help='config file path (default: None)')
-    args.add_argument('-r', '--resume', default=None, type=str,
+    args.add_argument('-r', '--resume', default='../exp/pubmed/models/pubmed/1106_110112/checkpoint-epoch9.pth', type=str,
                       help='path to latest checkpoint (default: None)')
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')

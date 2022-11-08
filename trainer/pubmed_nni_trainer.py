@@ -554,24 +554,24 @@ class Trainer(BaseTrainer):
                         count += 1
 
                 G.add_nodes_from(nodes)
-                #pos = nx.kamada_kawai_layout(G)  # multipartite_layout
+                pos = nx.spring_layout(G)  # multipartite_layout
 
-                pos_list = {}
-                center_dict = {'pink':[5,0],'red':[0,0],'blue':[-5,0],'green':[0,5],'yellow':[0,-5],'black':[1,1]}
-                for c in color_list:
-                    if c=='red':
-                        nNode = [u for (u,d) in G.nodes(data=True) if d['color'] == c or d['color'] == 'black']
-                    elif c=='black':
-                        continue
-                    else:
-                        nNode = [u for (u, d) in G.nodes(data=True) if d['color'] == c]
-                    d = nx.spring_layout(nNode)
-                    for k in d.keys():
-                        d[k] += np.array(center_dict[c])
-                    pos_list.update(d)
-
-                #plt.figure()
-                pos = pos_list
+                # pos_list = {}
+                # center_dict = {'pink':[5,0],'red':[0,0],'blue':[-5,0],'green':[0,5],'yellow':[0,-5],'black':[1,1]}
+                # for c in color_list:
+                #     if c=='red':
+                #         nNode = [u for (u,d) in G.nodes(data=True) if d['color'] == c or d['color'] == 'black']
+                #     elif c=='black':
+                #         continue
+                #     else:
+                #         nNode = [u for (u, d) in G.nodes(data=True) if d['color'] == c]
+                #     d = nx.spring_layout(nNode)
+                #     for k in d.keys():
+                #         d[k] += np.array(center_dict[c])
+                #     pos_list.update(d)
+                #
+                # #plt.figure()
+                # pos = pos_list
 
                 # G.remove_edges_from(edges)
                 edges = []
@@ -609,7 +609,7 @@ class Trainer(BaseTrainer):
                     nNode = [u for (u, d) in G.nodes(data=True) if d['color'] == c]
                     nx.draw_networkx_nodes(G, pos, nodelist=nNode, node_color=c,node_size=30)
 
-                nx.draw_networkx_edges(G, pos, edgelist=eColor,edge_color="r")
+                # nx.draw_networkx_edges(G, pos, edgelist=eColor,edge_color="r") #
                 nx.draw_networkx_edges(G, pos, edgelist=elarge)
                 nx.draw_networkx_edges(G, pos, edgelist=esmall, style='dashed')
                 # nx.draw_networkx_edges(G, pos, edgelist=eColor,edge_color=[1.0,0.0,0.0,1.0])
