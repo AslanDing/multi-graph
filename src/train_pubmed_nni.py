@@ -72,7 +72,7 @@ def main(config,argx):
                           logger=logger,
                           params= params)
 
-        trainer._visiual_epoch()
+        trainer.visiual_epoch()
         # trainer.train()
         # trainer._test_epoch()
 
