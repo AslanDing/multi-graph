@@ -412,3 +412,92 @@ class Trainer(BaseTrainer):
         total = self.length
 
         return base.format(current, total, 100.0 * current / total)
+
+    def visiual_epoch(self):
+        import networkx as nx
+        import matplotlib.pyplot as plt
+        self.model.eval()
+        edge_dict_trans = {("paper","to","paper"):('paper', 'subject', 'paper'),
+                           ("author","to","author"):('author', 'Institute', 'author')}
+        with torch.no_grad():
+            for batch_idx, data in enumerate(self.train_data_set):
+                data = data.to(self.device)
+                x_dict = data.x_dict
+                edge_dict = data.edge_index_dict
+                batch_dict = data.batch_dict
+                y_dict = data.y_dict
+                mask_dict = data.mask_dict
+
+                y_hat, w_dict = self.model(x_dict, edge_dict, batch_dict, mask_dict['paper'])
+
+                # node_list
+                color_list = ['red','blue','pink','green','yellow','black']
+                count = 0
+                dict_count = {}
+                node_list={}
+                for ii, key in enumerate(x_dict.keys()):
+                    if key=="paper":
+                        color = 'red'
+                    elif key=="author":
+                        color = 'blue'
+                    else:
+                        color = 'blue'
+
+                    node = x_dict[key].cpu().numpy()
+                    node_L = []
+                    for i in range(node.shape[0]):
+                        node_L.append((count, {"color": color}))
+                        if key == "domain1":
+                            if i == mask_dict["domain1"]:
+                                node_L[-1] = (count, {"color": "black"})
+
+                        dict_count[(key, i)] = count
+                        count += 1
+                    node_list[key] = node_L
+
+                # edges
+                edges_list = {}
+                for key in edge_dict.keys():
+                    edges = []
+                    edge = edge_dict[key].cpu().numpy()
+                    if key[0] == key[2]:
+                        w = w_dict[key].cpu().detach().numpy()
+                    for i in range(edge.shape[1]):
+                        node0 = dict_count[(key[0], edge[0, i])]
+                        node1 = dict_count[(key[2], edge[1, i])]
+                        if node0 == node1:
+                            continue
+
+                        if key[0] == key[2]:
+                            if w[i] < 0.5:
+                                edges.append((node0, node1, 1.0))  # same domain
+                            else:
+                                edges.append((node0, node1, 0.6))  # same domain
+                        else:
+                            edges.append((node0, node1, 0.4))  # cross domain
+                    edges_list[key] = edges
+
+                # each domain
+                for key in x_dict.keys():
+                    print(key)
+                    G = nx.Graph()
+                    nodes_for_show = node_list[key]
+                    G.add_nodes_from(nodes_for_show)
+                    edge_dict = edges_list[edge_dict_trans[(key,"to",key)]]
+                    G.add_weighted_edges_from(edge_dict)
+                    pos = nx.spring_layout(G)
+
+                    for c in color_list:
+                        nNode = [u for (u, d) in nodes_for_show if d['color'] == c]
+                        nx.draw_networkx_nodes(G, pos, nodelist=nNode, node_color=c, node_size=30)
+
+                    eColor = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] > 0.9]
+                    elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] > 0.5 and d['weight'] < 0.9]
+                    esmall = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] <= 0.5]
+
+                    nx.draw_networkx_edges(G, pos, edgelist=eColor,edge_color="r")
+                    nx.draw_networkx_edges(G, pos, edgelist=elarge)
+                    # nx.draw_networkx_edges(G, pos, edgelist=esmall, style='dashed')
+                    plt.show()
+                    # plt.close()
+                print()
