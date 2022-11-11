@@ -70,6 +70,7 @@ def main(config,argx):
                           test_data_set=data_set_test,
                           logger=logger,
                           params=params)
+        trainer.visiual_epoch()
         trainer._valid_epoch(1)
         trainer.train()
     except Exception as e:
@@ -81,9 +82,9 @@ def main(config,argx):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
-    args.add_argument('-c', '--config', default='../config/ogbn_config.json', type=str, # '../config/ogbn_config.json'
+    args.add_argument('-c', '--config', default=None, type=str, # '../config/ogbn_config.json'
                       help='config file path (default: None)')
-    args.add_argument('-r', '--resume', default=None, type=str,
+    args.add_argument('-r', '--resume', default='../exp/ogbn-mag/models/ogbn/1105_092114/checkpoint-epoch32.pth', type=str,
                       help='path to latest checkpoint (default: None)')  # r'../exp/ogbn-mag/models/ogbn/1101_202903/checkpoint-epoch22.pth'
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
