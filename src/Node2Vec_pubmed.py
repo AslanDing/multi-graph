@@ -17,7 +17,7 @@ import numpy as np
 
 
 def main():
-    data_dir = r'../exp/data/PubMed'
+    data_dir = r'../exp/pubmed/data'
     data_path = data_dir + r'/PubMed_process.mat'
     datas = loadmat(data_path)
 
@@ -61,8 +61,8 @@ def main():
         model.eval()
         z = model()
         acc,micro,macro = model.test(z[train_list], torch.from_numpy(train_label.reshape(-1)),
-                         z[test_list], torch.from_numpy(test_label.reshape(-1)),
-                         max_iter=150)
+                         z[test_list], torch.from_numpy(test_label.reshape(-1)))
+        # max_iter = 150
         return acc,micro,macro
     best_list = []
     bmic_list = []

@@ -26,8 +26,8 @@ class Classifier(object):
         self.clf = TopKRanker(clf)
         self.binarizer = MultiLabelBinarizer(sparse_output=True)
 
-    def train(self, X, Y):
-        #self.binarizer.fit(Y_all)
+    def train(self, X, Y,Y_all):
+        self.binarizer.fit(Y_all)
         X_train = [self.embeddings[str(x)] for x in X]
         Y = self.binarizer.transform(Y)
         self.clf.fit(X_train, Y)
@@ -46,7 +46,7 @@ class Classifier(object):
         return results
 
     def predict(self, X, top_k_list):
-        X_ = numpy.asarray([self.embeddings[x] for x in X])
+        X_ = numpy.asarray([self.embeddings[str(x)] for x in X])
         Y = self.clf.predict(X_, top_k_list=top_k_list)
         return Y
 

@@ -24,9 +24,12 @@ def main():
     test_list = datas['test_list'][0].tolist()
     test_label = datas['test_label'][0].tolist()
 
-    node_nums = A11.shape[0]
-    A11sub = A11.nonzero()
     G = networkx.Graph()
+
+    node_nums = A11.shape[0]
+    for i in range(node_nums):
+        G.add_node(str(i))
+    A11sub = A11.nonzero()
     for i in range(len(A11sub[0])):
         G.add_edge(str(A11sub[0][i]),str(A11sub[1][i]))
 
@@ -35,11 +38,19 @@ def main():
 
     embeddings = model.get_embeddings()
     clf = Classifier(embeddings=embeddings, clf=LogisticRegression())
-    clf.train(train_list, train_label)
+    Y_all = [ [i] for i in train_label]
+    Y_all.extend([ [i] for i in test_label])
+    train_label_list = [ [i] for i in train_label]
+    test_label_list = [ [i] for i in test_label]
+    clf.train(train_list, train_label_list,Y_all)
 
-    clf.evaluate(test_list,test_label)
+    clf.evaluate(test_list,test_label_list)
 
 if __name__=="__main__":
     main()
+    """
+    {'micro': 0.18604651162790695, 'macro': 0.1205111065405183, 'samples': 0.18604651162790697, 'weighted': 0.14483895037930605, 'acc': 0.18604651162790697}
+
+    """
 
 
