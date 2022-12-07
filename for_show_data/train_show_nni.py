@@ -1,24 +1,22 @@
 import os
-os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import argparse
 import collections
 import torch
 import numpy as np
 import model.loss as module_loss
-from data_loader.acm_dataset_x import ACMDataset
+from for_show_data.show_dataset_x import ShowDataset,ShowDatasetM
 from config.parse_config import ConfigParser
-from model.acm_model_softmax import MultiGraph
+from for_show_data.show_model_softmax import MultiGraph
 from torch_geometric.data import DataLoader
 import random
 from utils import prepare_device
-from trainer.acm_nni_trainer import Trainer
+from for_show_data.show_trainer import Trainer
 
 import nni
 from nni.utils import merge_parameter
 
-# SEED = 123
-SEED = 123
+SEED = 12 #3
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -32,8 +30,8 @@ def generate_default_params(args):
     return {
         'batch_size':args.batch_size,
         'learning_rate': args.learning_rate,
-        'PRI_beta': 0.1,
-        'PRI_alpha': 0.1,
+        'PRI_beta': 0.0,
+        'PRI_alpha': 0.0,
         'PRI_weight': 0.05,
         'GIB_beta': 0.1,
         'GIB_cross_weight': 0.1
@@ -47,11 +45,11 @@ def main(config,argx):
 
         logger = config.get_logger('train')
 
-        data_set_train = ACMDataset(mode='train')
+        data_set_train = ShowDataset(mode='train')
         data_set_train = DataLoader(data_set_train, batch_size=1, shuffle=True)
-        data_set_val = ACMDataset(mode='test')
+        data_set_val = ShowDatasetM(mode='val')
         data_set_val = DataLoader(data_set_val, batch_size=1, shuffle=True)
-        data_set_test = ACMDataset(mode='test')
+        data_set_test = ShowDatasetM(mode='test')
         data_set_test = DataLoader(data_set_test, batch_size=1, shuffle=True)
 
         model = MultiGraph()
@@ -72,30 +70,30 @@ def main(config,argx):
                           train_data_set=data_set_train,
                           val_data_set=data_set_val,
                           test_data_set=data_set_test,
-                          logger = logger,
-                          params= params)
-        # trainer.visiual_epoch()
-        # trainer._test_epoch()
-        # trainer._valid_epoch(1)
+                          logger=logger,
+                          params=params)
+        trainer.visiual_epoch()
+        #trainer._valid_epoch(1)
         trainer.train()
-        # trainer._test_epoch()
     except Exception as e:
         print(e)
         raise
+    # trainer._valid_epoch(1)
+    # trainer._test_epoch()
+
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
-    args.add_argument('-c', '--config', default='../config/acm_config.json', type=str, #
+    args.add_argument('-c', '--config', default=None, type=str, # './show_config.json'
                       help='config file path (default: None)')
-    args.add_argument('-r', '--resume', default=None, type=str,  # '../exp/acm/models/acm/1102_203153/checkpoint-epoch1.pth'
-                      help='path to latest checkpoint (default: None)')
+    args.add_argument('-r', '--resume', default="../exp/data_fow_show/models/show/1204_202724/model_best.pth", type=str,
+                      help='path to latest checkpoint (default: None)')  # r'../exp/ogbn-mag/models/ogbn/1101_202903/checkpoint-epoch22.pth'
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
     args.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    args.add_argument('--learning_rate', type=float, default=0.0008, metavar='LR',
+    args.add_argument('--learning_rate', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.01)')
-
     # custom cli options to modify configuration from default values given in json file.
     # CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
     # options = [
@@ -107,8 +105,5 @@ if __name__ == '__main__':
     main(config,argx)
 
 """
-micro_f1 0.9009433962264151 macro_f1 0.9018189725346613
-
-best  micro_f1 0.9047169811320754 macro_f1 0.9051804342678867
-0.9066037735849056 macro_f1 0.9072251979173371
+best  micro_f1 0.4430871737923376 macro_f1 0.16005625879043603
 """

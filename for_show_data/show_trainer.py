@@ -13,14 +13,12 @@ class Trainer(BaseTrainer):
     Trainer class
     """
     def __init__(self, model, criterion, metric_ftns, optimizer, config, device,
-                 train_data_set, val_data_set=None,test_data_set=None,
-                 len_epoch=100,logger=None,params=None):
-
+                 train_data_set, val_data_set=None,test_data_set=None,logger = None,
+                 len_epoch=100,params=None):
         self.logger = logger
         super().__init__(model, criterion, metric_ftns, optimizer, config)
         self.config = config
         self.device = device
-
 
         self.train_data_set = train_data_set
         self.val_data_set = val_data_set
@@ -113,7 +111,7 @@ class Trainer(BaseTrainer):
         self.train_metrics.reset()
 
         iter_data = iter(self.train_data_set)
-        for batch_idx in range(self.length//self.batch_size):
+        for batch_idx in range(self.length//self.batch_size):  # self.length//self.batch_size
             loss_entry_all = 0
             pri_loss_all = 0
             mi_loss_multi = 0
@@ -132,17 +130,17 @@ class Trainer(BaseTrainer):
                 batch_dict = data.batch_dict
                 y_dict = data.y_dict
                 mask_dict = data.mask_dict
-                #indx_dict = data.index_dict
 
-                y_hat, w_dict , \
+                y_hat, w_dict, \
                 multi_embedding_pool, multi_src_embedding_pool, \
-                node_embedding_sub = self.model(x_dict, edge_dict, batch_dict,mask_dict['paper'])
+                node_embedding_sub = self.model(x_dict, edge_dict,batch_dict,mask_dict['paper'])
 
                 # cal loss
                 # entry
                 loss_entry = self.cross_entry(y_hat, y_dict['paper'])
                 loss_entry_all += loss_entry
 
+                # H(G_s)
                 num_start_paper = 0
                 num_start_author = 0
                 num_start_psp = 0
@@ -184,7 +182,6 @@ class Trainer(BaseTrainer):
                         E_paper = torch.sparse_coo_tensor(torch.tensor(E_paper_list),
                                                           E_paper_value,
                                                           (paper_node_num, paper_paper_edge_num)).float().to(self.device)
-
                         diag_paper = torch.diag(w_dict[('paper', 'subject', 'paper')])
                         # diag_paper = torch.sparse_coo_tensor(torch.tensor(E_d_paper_list),
                         #                                      E_d_paper_value,
@@ -221,8 +218,6 @@ class Trainer(BaseTrainer):
                         E_author = torch.sparse_coo_tensor(torch.tensor(E_author_list),
                                                            E_author_value,
                                                            (author_node_num, author_author_edge_num)).float().to(self.device)
-                        if torch.sum(w_dict[('author', 'Institute', 'author')]) == 0 :
-                            continue
                         diag_author = torch.diag(w_dict[('author', 'Institute', 'author')])
                         # diag_author = torch.sparse_coo_tensor(torch.tensor(E_d_author_list),
                         #                                       E_d_author_value,
@@ -237,39 +232,35 @@ class Trainer(BaseTrainer):
                     loss_pri = loss_pri_paper + loss_pri_author
                     loss_pri_all += loss_pri
                 pri_loss_all += loss_pri_all
-                #
+
                 domain_sub_graph_paper.append(node_embedding_sub['paper'])
                 domain_sub_graph_author.append(node_embedding_sub['author'])
                 multi_graph_sub_emb.append(multi_embedding_pool)
                 multi_graph_src_emb.append(multi_src_embedding_pool.detach())
 
-            # # mi loss
+            # mi loss
             for i in range(self.batch_size):
                 query_vector = multi_graph_sub_emb[i]
                 positve_vector = multi_graph_src_emb[i]
                 mi_loss_tmp = mi_loss(query_vector,positve_vector,multi_graph_src_emb,i)
-                # mi_loss_multi += torch.relu(mi_loss_tmp)
-                mi_loss_multi += mi_loss_tmp
+                mi_loss_multi += mi_loss_tmp # torch.relu()
 
                 query_vector = domain_sub_graph_paper[i]
                 positve_vector = domain_sub_graph_author[i]
-                mi_loss_tmp = mi_loss(query_vector, positve_vector, multi_graph_src_emb, i)
-                # mi_loss_cross += torch.relu(mi_loss_tmp)
-                mi_loss_cross += mi_loss_tmp
+                mi_loss_tmp = mi_loss(query_vector, positve_vector, domain_sub_graph_author, i)
+                mi_loss_cross += mi_loss_tmp # torch.relu()
 
             loss_entry_all /= self.batch_size
             pri_loss_all /= self.batch_size
             mi_loss_multi /= self.batch_size
             mi_loss_cross /= self.batch_size
 
-            total_loss = loss_entry_all \
-                         + self.GIB_beta*mi_loss_multi + \
-                          self.PRI_weight*pri_loss_all + \
-                          self.GIB_cross_weight*mi_loss_cross
+            total_loss = loss_entry_all + self.GIB_beta*mi_loss_multi + \
+                         self.PRI_weight*pri_loss_all + \
+                         self.GIB_cross_weight*mi_loss_cross
 
             self.optimizer.zero_grad()
             total_loss.backward()
-            #torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=2,norm_type=2)
             self.optimizer.step()
 
             self.writer.set_step((epoch - 1) * len(self.train_data_set) + batch_idx, 'train')
@@ -301,7 +292,7 @@ class Trainer(BaseTrainer):
             self.train_metrics.update('loss', total_loss)
             self.train_metrics.update('gib_log', loss_entry_all)
             self.train_metrics.update('gib_mi', mi_loss_multi)
-            self.train_metrics.update('pri', pri_loss_all)
+            self.train_metrics.update('cross_mi', pri_loss_all)
             self.train_metrics.update('cross_mi', mi_loss_cross)
 
             if batch_idx % self.log_step == 0:
@@ -322,12 +313,6 @@ class Trainer(BaseTrainer):
         return log
 
     def _valid_epoch(self, epoch):
-        """
-        Validate after training an epoch
-
-        :param epoch: Integer, current training epoch.
-        :return: A log that contains information about validation
-        """
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
@@ -358,11 +343,10 @@ class Trainer(BaseTrainer):
                 self.max_microf1 = micre_f1
             if self.max_macrof1<macre_f1:
                 self.max_macrof1 = macre_f1
-            self.logger.info(' acc '+ str(acc) + " micro_f1 " + str(micre_f1) + " macro_f1 "+ str(macre_f1))
+            self.logger.info(' acc ' + str(acc) + " micro_f1 " + str(micre_f1) + " macro_f1 " + str(macre_f1))
             self.logger.info(' best ' + " micro_f1 " + str(self.max_microf1) + " macro_f1 "+ str(self.max_macrof1))
 
             nni.report_intermediate_result(micre_f1)
-
         # add histogram of model parameters to the tensorboard
         # for name, p in self.model.named_parameters():
         #     self.writer.add_histogram(name, p, bins='auto')
@@ -388,10 +372,11 @@ class Trainer(BaseTrainer):
                 acc.append((torch.argmax(y_hat, 1) == torch.argmax(data.y_dict['paper'], 1)).cpu().detach().numpy())
                 y_hats.append(torch.argmax(y_hat, 1).cpu().detach().numpy())
                 y_labels.append(torch.argmax(data.y_dict['paper'], 1).cpu().detach().numpy())
-            micre_f1 = f1_score(np.array(y_labels),np.array(y_hats),average="micro")
-            macre_f1 = f1_score(np.array(y_labels),np.array(y_hats),average="macro")
+
+            micre_f1 = f1_score(np.array(y_labels), np.array(y_hats), average="micro")
+            macre_f1 = f1_score(np.array(y_labels), np.array(y_hats), average="macro")
             acc = np.array(acc).mean()
-            #print(' acc ', acc," micro_f1 ",micre_f1," macro_f1 ",macre_f1,)
+
             if self.max_microf1<micre_f1:
                 self.max_microf1 = micre_f1
             if self.max_macrof1<macre_f1:
@@ -417,10 +402,18 @@ class Trainer(BaseTrainer):
         import networkx as nx
         import matplotlib.pyplot as plt
         self.model.eval()
-        edge_dict_trans = {("paper","to","paper"):('paper', 'subject', 'paper'),
-                           ("author","to","author"):('author', 'Institute', 'author')}
+
+        edge_dict_trans = {("paper", "to", "paper"): ('paper', 'subject', 'paper'),
+                           ("author", "to", "author"): ('author', 'Institute', 'author')}
         with torch.no_grad():
             for batch_idx, data in enumerate(self.test_data_set):
+                paper_title = data['paper_title']
+                paper_venue = data['paper_venue']
+                paper_year = data['paper_year']
+
+                author_name = data['author_name']
+                author_org = data['author_org']
+
                 data = data.to(self.device)
                 x_dict = data.x_dict
                 edge_dict = data.edge_index_dict
@@ -431,29 +424,42 @@ class Trainer(BaseTrainer):
                 y_hat, w_dict = self.model(x_dict, edge_dict, batch_dict, mask_dict['paper'])
 
                 # node_list
-                color_list = ['red','blue','pink','green','yellow','black']
-                count = 0
+                color_list = ['red', 'blue', 'pink', 'green', 'yellow', 'black']
+
                 dict_count = {}
-                node_list={}
+                node_list = {}
+
+                labels_for_show = {}
+
                 for ii, key in enumerate(x_dict.keys()):
-                    if key=="paper":
+                    count = 0
+                    if key == "paper":
                         color = 'red'
-                    elif key=="author":
+                    elif key == "author":
                         color = 'blue'
                     else:
                         color = 'blue'
 
                     node = x_dict[key].cpu().numpy()
                     node_L = []
+
+                    txt_for_show = {}
                     for i in range(node.shape[0]):
                         node_L.append((count, {"color": color}))
                         if key == "paper":
                             if i == mask_dict["paper"]:
                                 node_L[-1] = (count, {"color": "black"})
-
+                            txt = paper_title[count][0]+"."+paper_venue[count][0]+"."+str(paper_year[count][0])
+                            txt_for_show[count]=txt
+                        else:
+                            txt = author_name[0][count] + "." + author_org[0][count]
+                            txt_for_show[count]=txt
                         dict_count[(key, i)] = count
                         count += 1
+
+
                     node_list[key] = node_L
+                    labels_for_show[key] = txt_for_show
 
                 # edges
                 edges_list = {}
@@ -495,8 +501,11 @@ class Trainer(BaseTrainer):
                     elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] > 0.5 and d['weight'] < 0.9]
                     esmall = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] <= 0.5]
 
-                    #nx.draw_networkx_edges(G, pos, edgelist=eColor,edge_color="r")
-                    nx.draw_networkx_edges(G, pos, edgelist=elarge)
+
+                    nx.draw_networkx_labels(G, pos, labels_for_show[key], font_size=5, font_color="black")
+
+                    nx.draw_networkx_edges(G, pos, edgelist=eColor,edge_color="r",arrowstyle="->",arrowsize=10)
+                    nx.draw_networkx_edges(G, pos, edgelist=elarge,arrowstyle="->",arrowsize=10)
                     # nx.draw_networkx_edges(G, pos, edgelist=esmall, style='dashed')
                     plt.show()
                     # plt.close()

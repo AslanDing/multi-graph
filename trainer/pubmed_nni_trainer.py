@@ -574,7 +574,7 @@ class Trainer(BaseTrainer):
                         else:
                             edges.append((node0, node1, 0.4))  # cross domain
                     edges_list[key] = edges
-
+                print("batch",batch_idx)
                 # each domain
                 for key in x_dict.keys():
                     print(key)
